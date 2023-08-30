@@ -14,7 +14,8 @@
     "fastify-cli": "^5.8.0",
     "fastify-mongodb": "^4.2.0",
     "graphql": "^16.8.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "octokit": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.5.6",
