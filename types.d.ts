@@ -7,6 +7,7 @@ declare module 'fastify' {
             PORT:  string,
             MONGODB_URL: string
             GITHUB_PERSONAL_TOKEN: string
+            GITHUB_WEBHOOK_SECRET_TOKEN: string
         }
     }
 }

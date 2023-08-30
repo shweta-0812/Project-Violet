@@ -8,6 +8,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import mongodb from "@fastify/mongodb";
 import fenv from "@fastify/env";
+import * as crypto from "crypto";
 
 import { Octokit } from "octokit";
 
@@ -30,6 +31,9 @@ const envSchema = {
             type: 'string'
         },
         GITHUB_PERSONAL_TOKEN: {
+            type: 'string'
+        },
+        GITHUB_WEBHOOK_SECRET_TOKEN: {
             type: 'string'
         }
     }
@@ -76,7 +80,9 @@ await fastify.register(fastifyApollo(apollo), {
     context: myContextFunction(fastify),
 });
 
-//sample req
+
+
+//sample graphql get req
 // fastify.get('/user/:id', function (req, reply) {
 //     // Or this.mongo.client.db('mydb').collection('users')
 //     const users = this.mongo.db.collection('users')
@@ -92,6 +98,7 @@ await fastify.register(fastifyApollo(apollo), {
 //     })
 // })
 
+// sample github data fetch
 type GithubLoginData ={
     viewer: object;
     login: string;
@@ -104,6 +111,33 @@ const githubData: GithubLoginData = await octokit.graphql(`{
 }`);
 
 console.log(githubData)
+
+
+// verify webhook signature for authentication
+
+const GITHUB_WEBHOOK_SECRET_TOKEN: string = fastify.config.GITHUB_WEBHOOK_SECRET_TOKEN;
+
+const verify_signature = (request) => {
+    const signature = crypto
+        .createHmac("sha256", GITHUB_WEBHOOK_SECRET_TOKEN)
+        .update(JSON.stringify(request.body))
+        .digest("hex");
+    let trusted = Buffer.from(`sha256=${signature}`, 'ascii');
+    let untrusted =  Buffer.from(request.headers["x-hub-signature-256"], 'ascii');
+    return crypto.timingSafeEqual(trusted, untrusted);
+};
+
+fastify.post('/payload', {}, (request, reply) => {
+    if (!verify_signature(request)) {
+        reply.status(401).send("Unauthorized");
+        return;
+    }
+    console.log(":::::request verified::")
+    // console.log(request.body)
+    reply.send()
+})
+
+
 
 fastify.listen({ port: 3000 }, function (err,address) {
     if (err) {
